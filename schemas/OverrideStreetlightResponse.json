@@ -1,0 +1,20 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "OverrideStreetlightResponse",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "Accepted",
+                "Rejected",
+                "RejectedLocalOverride",
+                "NotSupported"
+            ]
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "status"
+    ]
+}

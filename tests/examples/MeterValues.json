@@ -1,0 +1,35 @@
+{
+  "meterValue": [
+    {
+      "timestamp": "2013-03-07T16:52:16Z",
+      "sampledValue": [
+        {
+          "value": "12",
+          "unit": "A",
+          "measurand": "Current.L1"
+        },
+        {
+          "value": "300",
+          "unit": "kWh",
+          "measurand": "Energy.Active.Import.Register"
+        }
+      ]
+    },
+    {
+      "timestamp": "2013-03-07T19:52:16Z",
+      "sampledValue": [
+        {
+          "value": "20",
+          "unit": "kWh",
+          "measurand": "Energy.Active.Import.Register"
+        },
+        {
+          "value": "40",
+          "unit": "kW",
+          "location": "P1Meter",
+          "measurand": "ActivePower.L1"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "BootNotificationRequest",
+    "type": "object",
+    "properties": {
+        "vendor": {
+            "type": "string",
+            "maxLength": 20
+        },
+        "model": {
+            "type": "string",
+            "maxLength": 20
+        },
+        "stationNumber": {
+            "type": "string",
+            "maxLength": 10
+        },
+        "serialNumber": {
+            "type": "string",
+            "maxLength": 25
+        },
+        "firmwareVersion": {
+            "type": "string",
+            "maxLength": 50
+        },
+        "iccid": {
+            "type": "string",
+            "maxLength": 20
+        },
+        "imsi": {
+            "type": "string",
+            "maxLength": 20
+        }
+    },
+    "additionalProperties": false
+}

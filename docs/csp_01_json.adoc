@@ -1,0 +1,1126 @@
+// vim: set syntax=asciidoc:
+:numbered:
+:toc: right
+:icons: font
+// sudo gem install coderay
+:source-highlighter: coderay
+:csp-version: 0.1
+
+= CSP {csp-version} json over websockets
+2016-05-29
+
+
+== Introduction
+
+This document lists all CSP (Connected Substation Protocol) {csp-version} messages, and gives examples how they would look like in json. The name CSP is a working title and might change in the future.
+
+NOTE: This document is a working document, this specification is being worked on. Handle all content as *Request For Comments*
+
+
+<<<
+== History
+
+[width="90"]
+|===
+|2016-05-29 | Add `ReactiveEnergy.<X>` as `measurand` in <<MeterValues>>. This renders the Inductive/Capacitive version obsolete.
+|2016-05-29 | document all <<StatusNotification>> fields + fixed magic `info` strings (<<StatusNotification_info>>)
+|2016-04-28 | Update <<GetEffectiveStreetlightDaySchedule>>. Update to new daylight schedule structure, and change `at` to localtime
+|2016-04-22 | Add refactored <<SetStreetlightProfile>> message (backwards incompatible change)
+|2016-04-04 | Add default values for optional fields in <<MeterValues>>, Add neutral current `Current.N` to <<MeterValues>>
+|2016-03-18 | Add `test` field to <<StatusNotification>>
+|2016-03-16 | Update <<TestMVFaultIndicator>>, add `RejectedAlreadyFaulted`, Removed old stuff, add `MVFaultIndicatorError` to <<StatusNotification>>, add <<Configuration_TODO>>
+|2016-03-14 | Remove old streetlight stuff from <<StatusNotification>>, add <<ResetMVFaultIndicator>>, <<TestMVFaultIndicator>>
+|2016-02-24 | Add clarification in <<StreetlightModeStatusNotification>>
+|2016-02-19 | typo RemoveOverride -> RemoteOverride
+|2016-02-11 | typos in <<StreetlightStatusNotification>> and <<StreetlightModeStatusNotification>> schemas
+|2016-01-25 | typos
+|2015-12-11 | Add <<StreetlightStatusNotification>> and <<StreetlightModeStatusNotification>>
+|2015-12-01 | requestId maxlen 25 -> 36
+|2015-11-23 | Add `RejectedLocalOverride` to <<ResumeStreetlight>>
+|2015-11-23 | Updated <<StatusNotification>>, add `UnexpectedStreetlightChange` and document that we always send a <<StatusNotification>> on a <<OverrideStreetlight>>/<<ResumeStreetlight>>.
+|2015-11-17 | Added `MissedStreetlightUpdate` to <<StatusNotification>>, added `timestamp` to streetlight <<StatusNotification>>
+|2015-11-09 | swap nigh/evening meaning of contactorId, add `LocalOverrideEnabled`, `LocalOverrideDisabled`
+|2015-11-06 | <<MeterValues>> units all short
+|2015-11-03 | swap <<contactorId>>, update <<MeterValues>>, BootNotification `stationNumber` no longer mandatory.
+|2015-11-02 | <<contactorId>>, add <<MeterValues>>
+|2015-10-21 | limit <<SetStreetlightProfile>>  validFrom/validTo  to dates (ignoring time part)
+|2015-10-19 | explain how we send the streetlight status via a <<StatusNotification>>
+|2015-10-09 | more explanation in  <<SetStreetlightProfile>>, <<OverrideStreetlight>>, removed demo chapter
+|2015-10-05 | document StreetlightProfileMaxStackLevel`
+|2015-10-02 | `SetStreetlightProfile`: clarify `time`
+|2015-09-28 | `SetStreetlightProfile`: limit nr of `daySchedule` entries
+|2015-09-25 | `SetStreetlightProfile`: no empty arrays, streetLight -> streetlight
+|2015-09-21 | add `clearSchedule` param to `SetStreetlightProfile`
+|2015-09-18 | reworked `SetStreetlightProfile`, `OverrideStreetlight` (`suspend`)
+|2015-09-14 | reworked `SetStreetlightProfile`, added `OverrideStreetlight`/`ResumeStreetlight`
+|2015-09-11 | reworked, remove demo stuff part 1
+|2015-07-13 | demo version api
+|===
+
+
+== TODO
+
+This chapter lists all Open issues
+
+
+triggermessage
+~~~~~~~~~~~~~~
+* voorstel weglaten (niet duidelijk wat te sturen bij een trigger statusnotification)
+
+
+DGPT relay
+~~~~~~~~~~
+new messages needed for
+* DGPT relay  aansturen (lezen + schrijven)
+
+`SetDGPT2()`
+`GetDGTP2()`
+
+
+Demo/Test  GetConfiguration keys
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+In the demo we exported these GetConfiguration keys, check if we want to keep these
+
+
+.GetConfiguration keys used for demo
+|===
+| key | type | description | example
+
+| `CurrentTime` |datetime | setting, to force tbhe CP to a certain date/time. | 
+| `SunRise` | datetime | read the sunrise time of today | `2015-02-01T08:07:18Z`
+| `SunSet` | datetime | read the sunset time of today |  `2015-02-01T08:21:18Z`
+|===
+
+
+[[Configuration_TODO]]
+Configuration parameters
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+We should document our  configuration parameterers.
+Here is a start.
+
+|===
+| key | RO\RW | type | description
+
+| "MVFaultIndictor1Type" | RW| "NONE","OPTO_F", "OPTO_FE", "COMPASS_A", "COMPASS_B"| type of MV indicator installed for group 1
+| "MVFaultIndictor2Type" | RW| "NONE","OPTO_F", "OPTO_FE", "COMPASS_A", "COMPASS_B"| type of MV indicator installed for group 2
+| "MVFaultIndictor3Type" | RW| "NONE","OPTO_F", "OPTO_FE", "COMPASS_A", "COMPASS_B"| type of MV indicator installed for group 3
+|===
+
+StatusNotifcation messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Document the allowed <<StatusNotification_statusses>>
+
+
+metervalues
+~~~~~~~~~~~
+disable LS measurments (bitfield)
+
+check the required <<MeterValues>> details.
+
+== Messages
+
+:exampledir: ../tests/examples
+:schemadir: ../schemas
+
+=== Types
+
+Some messages have a contactorId field. The table below shows the possible values
+
+[[contactorId]]
+.contactorId 
+|===
+| nr |   description
+
+| 1 |  Evening/Morning
+| 2 |  Night
+| 3 | <unspecified>
+| 4 | <unspecified>
+|===
+
+
+=== BootNotification
+
+==== examples
+*request:*
+[source,json]
+----
+include::{exampledir}/BootNotification.json[]
+----
+
+*response:*
+[source,json]
+----
+include::{exampledir}/BootNotificationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source,json]
+----
+include::{schemadir}/BootNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/BootNotificationResponse.json[]
+----
+
+=== ChangeConfiguration
+
+.ChangeConfiguration parameters
+|===
+| key | description | example value
+
+|[[StreetlightProfileMaxStackLevel]]`StreetlightProfileMaxStackLevel` | highest `stackLevel` that may be used in <<SetStreetlightProfile>>   |  "16"
+|===
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/ChangeConfiguration.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/ChangeConfigurationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/ChangeConfiguration.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/ChangeConfigurationResponse.json[]
+----
+
+
+=== ClearStreetlightProfile
+
+TIP: When erasing a complete schedule to install a new schedule, its better to use the `clearSchedule` flag in the <<SetStreetlightProfile>> call, than calling `ClearStreetlightProfile`. That way you ensure you also have a sane schedule installed. (even when communication goes down after the `ClearStreetlightProfile`
+
+|===
+| `contactorId` | 1-4  indicates which <<contactorId>> to erase, leaving this field out implies that this clear request is requested for *all* contactorIds.
+| `profileId` | indicates which profile must be deleted. If left out, and `stackLevel` is left out too, all profiles for this specific <<contactorId>> are deleted. `stacklevel` and `profileId` are mutual exclusive
+| `stackLevel`| indicates which profile must be deleted. If left out, and `profileId` is left out too, all profiles for this specific <<contactorId>> are deleted. `stackLevel` and `profileId` are mutual exclusive.
+|===
+
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/ClearStreetlightProfile.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/ClearStreetlightProfileResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/ClearStreetlightProfile.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/ClearStreetlightProfileResponse.json[]
+----
+
+=== DiagnosticsStatusNotification
+
+==== remarks
+
+`requestId` is mandatory if the GetDiagnostics had a `requestId`.
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/DiagnosticsStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/DiagnosticsStatusNotificationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/DiagnosticsStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/DiagnosticsStatusNotificationResponse.json[]
+----
+
+=== FirmwareStatusNotification
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/FirmwareStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/FirmwareStatusNotificationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/FirmwareStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/FirmwareStatusNotificationResponse.json[]
+----
+
+=== GetConfiguration
+
+==== examples
+
+*request:*
+[source, json]
+----
+include::{exampledir}/GetConfiguration.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/GetConfigurationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/GetConfiguration.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/GetConfigurationResponse.json[]
+----
+
+=== GetEffectiveStreetlightDaySchedule
+
+This message can be used to check back office and station implementations. This returns the effective schedule for a specific day.
+
+.GetEffectiveStreetlightDaySchedule  parameters
+|===
+|`contactorId` | indicates for which <<contactorId>> the request is intended
+|`at` | date on which to get the schedule. This must be in *local* time (not utc) and only the date part is used.
+|===
+
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/GetEffectiveStreetlightDaySchedule.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/GetEffectiveStreetlightDayScheduleResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/GetEffectiveStreetlightDaySchedule.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/GetEffectiveStreetlightDayScheduleResponse.json[]
+----
+
+=== GetDiagnostics
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/GetDiagnostics.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/GetDiagnosticsResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/GetDiagnostics.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/GetDiagnosticsResponse.json[]
+----
+
+=== Heartbeat
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/Heartbeat.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/HeartbeatResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/Heartbeat.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/HeartbeatResponse.json[]
+----
+
+=== MeterValues
+
+.MeterValues details
+|===
+| Measurand | Unit | Location | Description 
+
+| AmbientTemperature | Celsius | - | Ambient temperature
+| OilTemperature | Celsius | - |  temperature of transformer
+| BoardTemperature | Celsius | - |  temperature of the board
+| Voltage.L1N | V | - | Actual voltage phase L1
+| Voltage.L2N | V | - | Actual voltage phase L2
+| Voltage.L3N | V | - | Actual voltage phase L3
+| Current.N | A | - | Actual three phase neutral current
+| Current.L1 | A | - | Actual station current phase L1
+| Current.L2 | A | - | Actual station current phase L2
+| Current.L3 | A | - | Actual station current phase L3
+| Current.Sum | A | - | Actual station current (L1 + L2 + L3)
+| PowerFactor.L1 | - | - | Power factor (cos phi) L1
+| PowerFactor.L2 | - | - | Power factor (cos phi) L2
+| PowerFactor.L3 | - | - | Power factor (cos phi) L3
+| PowerFactor.Sum | - | - | Power factor (cos phi) of total
+| ActivePower.L1 | W | - | Active power usage phase L1
+| ActivePower.L2 | W | - | Active power usage phase L2
+| ActivePower.L3 | W | - | Active power usage phase L3
+| ActivePower.Sum | W | - | Active power usage total
+| ApparentPower.L1 | VA | - | Apparent power usage phase L1
+| ApparentPower.L2 | VA | - | Apparent power usage phase L2
+| ApparentPower.L3 | VA | - | Apparent power usage phase L3
+| ApparentPower.Sum | VA | - | Apparent power usage total
+| ReactivePower.L1 | var | - | reactive power phase L1
+| ReactivePower.L2 | var | - | reactive power phase L2
+| ReactivePower.L3 | var | - | reactive power phase L3
+| ReactivePower.Sum | var | - | reactive power total
+| RealEnergyConsumed.L1 | Wh | - | Real energy consumed phase L1
+| RealEnergyConsumed.L2 | Wh | - | Real energy consumed phase L2
+| RealEnergyConsumed.L3 | Wh | - | Real energy consumed phase L3
+| RealEnergyConsumed.Sum | Wh | - | Real energy delivered total
+| RealEnergyDelivered.L1 | Wh | - | Real energy delivered phase L1
+| RealEnergyDelivered.L2 | Wh | - | Real energy delivered phase L2
+| RealEnergyDelivered.L3 | Wh | - | Real energy delivered phase L3
+| RealEnergyDelivered.Sum | Wh | - | Real energy delivered total
+| ApparentEnergy.L1 | VAh | - | apparent energy phase L1
+| ApparentEnergy.L2 | VAh | - | apparent energy phase L2
+| ApparentEnergy.L3 | VAh | - | apparent energy phase L3
+| ApparentEnergy.Sum | VAh | - | apparent energy total
+| ReactiveEnergy.L1 | varh | - | reactive energy phase L1
+| ReactiveEnergy.L2 | varh | - | reactive energy phase L2
+| ReactiveEnergy.L3 | varh | - | reactive energy phase L3
+| ReactiveEnergy.Sum | varh | - | reactive energy total
+| THDv.L1N | % | - | Total Harmonic Distortion of voltage, phase L1
+| THDv.L2N | % | - | Total Harmonic Distortion of voltage, phase L2
+| THDv.L3N | % | - | Total Harmonic Distortion of voltage, phase L3
+| THDc.L1 | % | - | Total Harmonic Distortion of current, phase L1
+| THDc.L2 | % | - | Total Harmonic Distortion of current, phase L2
+| THDc.L3 | % | - | Total Harmonic Distortion of current, phase L3
+| Frequency | Hz | - | Line Frequence 
+| Current.L1 | Amp | P1Meter |actual current phase L1 streetlights
+| Current.L2 | Amp | P1Meter |actual current phase L2 streetlights
+| Current.L3 | Amp | P1Meter |actual current phase L3 streetlights
+| ActivePower.L1 | kW | P1Meter |actual power usage phase L1 streetlights
+| ActivePower.L2 | kW | P1Meter|actual power usage phase L2 streetlights
+| ActivePower.L3 | kW | P1Meter |actual power usage phase L3 streetlights
+| Energy.Active.Import.Register | kWh | P1Meter |Total energy delivered (total of tarif I + II) streetlights
+| Power.Active.Import | kW | P1Meter | Actual power (L1 + L2 + L3)  streetlights
+|===
+
+The following are no longer used, but older version of the firmware might still send these.
+
+.Depricated MeterValue details
+|===
+| ReactiveEnergyInductive.L1 | varh | - | reactive energy inductive phase L1
+| ReactiveEnergyInductive.L2 | varh | - | reactive energy inductive phase L2
+| ReactiveEnergyInductive.L3 | varh | - | reactive energy inductive phase L3
+| ReactiveEnergyInductive.Sum | varh | - | reactive energy inductive total
+| ReactiveEnergyCapacitive.L1 | varh | - | reactive energy capacitive phase L1
+| ReactiveEnergyCapacitive.L2 | varh | - | reactive energy capacitive phase L2
+| ReactiveEnergyCapacitive.L3 | varh | - | reactive energy capacitive phase L3
+| ReactiveEnergyCapacitive.Sum | varh | - | reactive energy capacitive total
+|
+|===
+
+.default values of optional fields
+|===
+| field | default value
+
+| context | `Sample.Periodic`
+| format  | `Raw`
+| unit    | -
+| location| -
+|===
+
+
+==== examples
+
+*request:*
+[source, json]
+----
+include::{exampledir}/MeterValues.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/MeterValuesResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/MeterValues.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/MeterValuesResponse.json[]
+----
+
+
+=== OverrideStreetlight
+
+This method is used to remotely override a streetlight schedule. You can use this to force streetlights on or off.
+The streetlights are kept on (or off) until you resume the schedule with a <<ResumeStreetlight>> message.
+
+TIP: Use action `Suspend` to safely install a new schedule without effecting the current state.
+
+.OverrideStreetlight request parameters
+|===
+| parameter | description
+
+| `contactorId` | 1-4  indicates which <<contactorId>> to override, leaving this field out implies that this actions is desired for *all* contactorIds.
+| `action` | `"On"` force lights on. `"Off"` force lights off. `"Suspend"` suspend schedule, keep lights in current state.
+|===
+
+.OverrideStreetlight response `status` parameter
+|===
+| status value | description 
+
+| `Accepted`  | command is accepted
+| `RejectedLocalOverride`  | command is rejected, because a local (by hardware switch) override is active now
+| `Rejected`  | command is rejected for unknown reason
+| `NotSupported`  | The system does not support OverrideStreetlight
+|===
+
+
+When the override mode is successfully enabled a <<StreetlightModeStatusNotification>> will be send with mode `RemoteOverride`.
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/OverrideStreetlight.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/OverrideStreetlightResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/OverrideStreetlight.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/OverrideStreetlightResponse.json[]
+----
+
+
+=== ResumeStreetlight
+
+This message stops a remote override state, that was initiated before with  <<OverrideStreetlight>>. When this call succeeds the station follows the schedule again.
+
+|===
+| `contactorId` | 1-4  indicates which <<contactorId>> to override, leaving this field out implies that this actions is desired for *all* contactorIds.
+|===
+
+.ResumeStreetlight response `status` parameter
+|===
+| status value | description 
+
+| `Accepted`  | command is accepted
+| `RejectedLocalOverride`  | command is rejected, because a local (by hardware switch) override is active now
+| `Rejected`  | command is rejected for unknown reason
+| `NotSupported`  | The system does not support OverrideStreetlight
+|===
+
+
+When the resume action is completed  <<StreetlightModeStatusNotification>> will be send with the current mode. 
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/ResumeStreetlight.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/ResumeStreetlightResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/ResumeStreetlight.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/ResumeStreetlightResponse.json[]
+----
+
+
+=== Reset
+
+Trigger a hardware reset.
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/Reset.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/ResetResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/Reset.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/ResetResponse.json[]
+----
+
+=== ResetMVFaultIndicator
+
+Reset all the Medium Voltage Fault indicators.
+
+A reset of an indicater after a fault has been fixed. Or if a test was issued. If a <<ResetMVFaultIndicator>> is issued while the cause of an alarm was not fixed, the Indicator will re-enter the fault state, and send again a <<StatusNotification>> indicating the error.
+
+NOTE: an Opto is an example of a Medium Voltage Fault indicator.
+
+
+See related message: <<TestMVFaultIndicator>>
+
+.ResetMVFaultIndicator response `status` parameter
+|===
+| status value | description 
+
+| `Accepted`  | command is accepted
+| `Rejected`  | No Medium Voltage indicator device is available
+|===
+
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/ResetMVFaultIndicator.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/ResetMVFaultIndicatorResponse.json[]
+----
+
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/ResetMVFaultIndicator.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/ResetMVFaultIndicatorResponse.json[]
+----
+
+
+=== SetStreetlightProfile
+
+Write a new profile to the station. This can be added additional to the current schedules, or it can install a new set (existing schedules are erased), depending on the `clearSchedule` parameters.
+
+WARNING: We specify a schedule per day. To ensure we can properly schedule periods during a night, a day, in SetStreetlightProfile context, starts at noon 12:00 and ends the next day at 11:59:59.
+
+TIP: use the `clearSchedule` parameter to safely install a new schedule and prevent that a station is left without a schedule.
+
+TIP: when using the `clearSchedule` and you have to issue `SetStreetlightProfile` multiple times, (when the messages are becoming too big for the station), ensure to send the basic profile first, a catch all sane default. This means you probably want to send  the lowest stacklevels with the first `SetStreetlightProfile` call (the one that also has `clearSchedule`).
+
+TIP: when you have to issue `SetStreetlightProfile` multiple times to set a complete profile, you can use <<OverrideStreetlight>> with action `Suspend`, *before* you start, to prevent switching the lights unintendedly when the sequence is not complete yet.  To resume scheduling issue a <<ResumeStreetlight>> when the complete profile is set.
+
+
+==== Changes compared to the 'old' SetStreetlightProfile
+
+WARNING: The SetStreetlightProfile message changed on 22 april 2016, the following 3 things are changed:
+
+* The 'new' SetStreetlightProfile has `validFrom` and `validTo` in *local* time, instead of UTC.
+* The 'new' SetStreetlightProfile days are from noon `12:00:00` till the next day noon `11:59:59`  (instead of from `00:00:00` to `23:59:59`
+* The 'new' SetStreetlightProfile sends periods the lights shoud be on, instead of 'on'/'off' switch moments
+* The 'new' SetStreetlightProfile `maxItems` of `daySchedule` is 4 instead of 8. (resulting in an equivalent number of programmable 'on' periods)
+
+
+==== Details
+
+.SetStreetlightProfile top level parameters
+|===
+|`contactorId` | indicates for which <<contactorId>> these profile is intended.
+|`clearSchedule` | (optional) when this is `true`, all profiles for this <<contactorId>> are erased, before the new profiles are installed. The erase and setting of the new profiles is atomic, either both succeed, or both fail. defaults to `false`.
+|===
+
+
+A combined streetlight profile consists of a set of streetlight profiles, each with a unique `profileId` and `stackLevel`.
+
+.SetStreetlightProfile parameters
+[width="90"]
+|===
+|`profileId` | unique id, can be used to delete an individual profile
+|`stackLevel` | a higher number has higher precedence, must be unique, two profiles with the same stack level are not allowed. must be lower or equal than `StreetlightProfileMaxStackLevel` configuration setting.
+|`recurrencyKind` | indicates if daySchedule should be daily, weekly or not recurring
+|`validFrom` | schedule is not valid before this date. This date is also used to determine on which day-of-the-week a weekly recurring schedule should be active.
+               We only take into account the date part, the time part in validFrom is ignored.
+               NB: the schedule will be active on the specified date, but only from noon 12:00 and later. (as before 12:00 is seen as the previous day).
+|`validTo` | (optional) schedule is not valid/used after this time.
+              We only take into account the date part, the time part in validFrom is ignored.
+              We use this as inclusive end date, ending the next day at 11:59:59 
+|===
+
+.daySchedule parameters
+[width="90"]
+|===
+|`start` | Indicates the time the `On` period starts
+|`end` | Indicates the time the `On` period ends
+|===
+
+
+
+.daySchedule start/end parameters
+[cols="literal,asciidoc", width="90"]
+|===
+|`kind` | Indicates how the time is specified.  "Absolute" means, time is passed as local time. "Sunset" means time is given relative to the sunset. "Sunrise" means time is given relative to the sunrise time.
+ The station will calculate the sunrise/sunset times daily based on the location and date.
+|`time` | mandatory when `kind` is "Absolute". Indicates  local time when action should occur.  must be in format HH:mm:ss  in 24 hour format:  eg   "21:03:00" or "06:30:59", start of day is "12:00:00"  end of day is "11:59:59".  You can optinally add ms, eg: "21:03:00.500".
+|`offset` | mandatory when `kind` is "Sunset" or "Sunrise", indicates time offset in *seconds* when action should occur. Negative values are allowed and mean 'before'.
+|===
+
+TIP: If a daySchedule period `end` time is before the `start` time, the light will not be switched on. So it it safe to use the `Sunset` or `Sunrise` offsets, if they cross an absolute time, the lights will be kept off.
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/SetStreetlightProfile.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/SetStreetlightProfileResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/SetStreetlightProfile.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/SetStreetlightProfileResponse.json[]
+----
+
+=== StatusNotification
+
+NOTE: Streetlight statusses are not send via this message, but rather via <<StreetlightStatusNotification>> and <<StreetlightModeStatusNotification>>
+
+
+
+.StatusNotifcation fields
+|===
+| field | description
+
+| `test` | (optional) if test is true, this error is a result from a hardware test, not from a 'real' error situation
+| `status` | indicates the status of the transformer station as a whole. If this is Faulted, the station is in an error state. This doesn't necessarily mean that the current status notification is describing an error as it could be a message indicating that an error is resolved (but not necessarily all errors).
+| `errorCode` | indicates whether this status notification describes an error and which error this is. If this is NoError, this notification does not describe an error and the info field could contain a string indicating whether an error has been resolved. If this is OtherError, the vendorId and vendorErrorCode should be given to indicate which error this describes.
+| `info` | (optional) . Additional free format information related to the error.  NB: This is (ab)used to mark specific errors as solved. See table below.
+| `timestamp` | (optional) describes the moment at which the given state or error was discovered.
+| `vendorId` | (optional) the unique identification for the vendor who specified this custom error.
+| `vendorErrorCode`| (optional) the identification of the custom error provided by the vendor.
+|===
+
+
+The `info` field is not only free format. We use some fixed strings to communicate 3 types of errors to be resolved. These are documented in the table below.
+[[StatusNotification_info]]
+.StatusNotification info field
+|===
+| info text |   meaning
+
+| `Indicator fault (MV) resolved` |  the `MVFaultIndicatorError` is resolved
+| `Over current error (MV) resolved` | the `OverCurrentFailure` of the Medium Voltage Fault indicator is resolved
+| `Ground failure resolved` | the `GroundFailure` of the Medium Voltage Fault indicator is resolved
+|===
+
+[[StatusNotification_statusses]]
+.StatusNotification statusses  (not complete)
+|===
+| status | description
+
+| `GroundFailure`  | Ground failure detected (or in test mode), `info` field indicates which group
+| `MVFaultIndicatorError` | Error dected in functionality of MVFaultIndicator, `info` field indicates which group
+| `OverCurrentFailure` | Overcurrent detected (or in test mode), `info` field indicates which group
+|===
+
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/StatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/StatusNotificationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/StatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/StatusNotificationResponse.json[]
+----
+
+=== StreetlightModeStatusNotification
+
+This messages is used to inform the backend that the scheduling mode of the streetlight changed.
+This message might be triggered by a <<OverrideStreetlight>> or <<ResumeStreetlight>> request, but it might also come spontanious. (when a user enabled the local override mode via the hardware switch).
+
+NOTE: The station garantees delivery of these events. In case communication is down communication the station will store these events, and send the messages later.
+The station will retry untill each event is delivered.
+Only when the backend did send a response, the station considers the event delivered.
+
+.Streetlight mode is notified using these fields
+|===
+| field |  description
+
+| `contactorId` | indicates from which <<contactorId>> we're sending the mode, if left out the mode is valid for *all* contactors.
+| `mode` |  `Schedule`, `LocalOverride` or `RemoteOverride`. LocalOverride means locally in the station someone pulled the manual override switch. RemoteOverride is triggered by a <<OverrideStreetlight>> message, Schedule means the station switches the lights automatically according to its schedule.
+| `timestamp` | actual timestamp of the change moment.
+|===
+
+NOTE: When a localoverride is implemented as a station wide switch, the enabling/disabling of local override will always communicate the mode of *all* contactorIds.  Either by leaving out the `contactorId` field, or by sending multiple `StreetlightModeStatusNotification` messages.
+
+==== examples
+.example for all contactorIds
+*request:*
+[source, json]
+----
+include::{exampledir}/StreetlightModeStatusNotification.json[]
+----
+
+.example for specific contactorId
+*request:*
+[source, json]
+----
+include::{exampledir}/StreetlightModeStatusNotification2.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/StreetlightModeStatusNotificationResponse.json[]
+----
+
+
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/StreetlightModeStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/StreetlightModeStatusNotificationResponse.json[]
+----
+
+
+=== StreetlightStatusNotification
+
+This message is used to inform the backend of actual light switches. This is send on ON->OFF, OFF->ON transitions.
+
+NOTE: The station garantees delivery of these events. In case communication is down communication the station will store these events, and send the messages later.
+The station will retry untill each event is delivered.
+Only when the backend did send a response, the station considers the event delivered.
+
+.Streetlight status is notified using these fields
+|===
+| field |  description
+
+| `contactorId` | indicates from which <<contactorId>> we're sending the status
+| `status` |  `On` or `Off`, indicates if lights are on or off
+| `timestamp` | actual timestamp of the switch moment.  (This may differ slightly from the scheduled time)
+| `unexpected` |  (optional) true indicates this light was switch unexpectedly, not controlled by the RTU. This might indicate someone manually pulls a switch, of that a fault occurs. 
+|===
+
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/StreetlightStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/StreetlightStatusNotificationResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/StreetlightStatusNotification.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/StreetlightStatusNotificationResponse.json[]
+----
+
+
+=== TestMVFaultIndicator
+
+Put all Medium Voltage Fault indicators in test mode.
+This will trigger an "OverCurrentFailure" and (optionally depending on the hardware) a "GroundFailure", and one (or two) <<StatusNotification>> will be send with this status This will only be restored after a <<ResetMVFaultIndicator>> message.
+
+
+If the station detects during testing that an opto is not working correctly a <<StatusNotification>> with status `MVFaultIndicatorError` is send.
+
+
+NOTE: an Opto is an example of a Medium Voltage Fault indicator.
+
+NOTE: The number of <<StatusNotification>> messages depends on how many, and which indicators are installed. See checkout `MVFaultIndicatorError` and friend at <Configuration_TODO>> .
+
+TIP: Any resulting error <<StatusNotification>> from a TESTMVFaultIndicator will have the `"test"` field set to `true`.
+
+See related message: <<ResetMVFaultIndicator>>
+
+
+.TestMVFaultIndicator response `status` parameter
+|===
+| status value | description 
+
+| `Accepted`  | command is accepted
+| `RejectedAlreadyFaulted`  | One (or more) Indicators are already in alarm state (due to fault or due to test), Cannot start test.
+| `Rejected`  | No Medium Voltage indicator device is available
+|===
+
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/TestMVFaultIndicator.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/TestMVFaultIndicatorResponse.json[]
+----
+
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/TestMVFaultIndicator.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/TestMVFaultIndicatorResponse.json[]
+----
+
+
+=== TriggerMessage
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/TriggerMessage.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/TriggerMessageResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/TriggerMessage.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/TriggerMessageResponse.json[]
+----
+
+=== UpdateFirmware
+
+==== examples
+*request:*
+[source, json]
+----
+include::{exampledir}/UpdateFirmware.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{exampledir}/UpdateFirmwareResponse.json[]
+----
+
+==== schemas
+
+*request:*
+[source, json]
+----
+include::{schemadir}/UpdateFirmware.json[]
+----
+
+*response:*
+[source, json]
+----
+include::{schemadir}/UpdateFirmwareResponse.json[]
+----
+
+

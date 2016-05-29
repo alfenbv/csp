@@ -1,0 +1,34 @@
+{
+    "contactorId": 1,
+    "clearSchedule": true,
+    "streetlightProfiles": [
+      {
+        "profileId" : 1,
+        "stackLevel": 2,
+        "recurrencyKind": "Daily",
+        "validFrom": "2015-06-06T00:00:00",
+        "validTo": "2019-09-06T00:00:00",
+        "daySchedule": [
+            {
+               "start": {
+                 "kind": "Sunset",
+                 "offset": 3600
+                },
+                "end": {
+                  "kind": "Absolute",
+                  "time": "01:00:00"
+                }
+            }, {
+               "start": {
+                 "kind": "Absolute",
+                 "time": "06:00:00"
+                },
+                "end": {
+                  "kind": "Sunrise",
+                  "offset": 0
+                }
+             }
+        ]
+      }
+    ]
+}

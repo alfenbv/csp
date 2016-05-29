@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "TestMVFaultIndicatorResponse",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "Accepted",
+                "RejectedAlreadyFaulted",
+                "Rejected"
+            ]
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "status"
+    ]
+}

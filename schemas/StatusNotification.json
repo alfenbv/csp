@@ -1,0 +1,56 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "StatusNotificationRequest",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "Ok",
+                "Faulted"
+            ]
+        },
+        "errorCode": {
+            "type": "string",
+            "enum": [
+                "GroundFailure",
+                "HighTemperature",
+                "MVFaultIndicatorError",
+                "NoError",
+                "OtherError",
+                "OverCurrentFailure",
+                "PowerMeterFailure",
+                "PowerSwitchFailure",
+                "ResetFailure",
+                "UnderVoltage",
+                "OverVoltage",
+                "WeakSignal"
+            ]
+        },
+        "info": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "timestamp": {
+            "type": "string",
+            "format": "date-time"
+        },
+        "vendorId": {
+            "type": "string",
+            "maxLength": 128
+        },
+        "vendorErrorCode": {
+            "type": "string",
+            "maxLength": 64
+        },
+        "test": {
+            "type": "boolean",
+            "description": "true indicates that this is not a real error, but rather a notification resulting from a hardware test"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "status",
+        "errorCode"
+    ]
+}

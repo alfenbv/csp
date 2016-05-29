@@ -1,0 +1,14 @@
+{
+    "status": "Accepted",
+    "contactorId": 1,
+    "daySchedule": [
+        { 
+            "start": "20:11:00",
+            "end": "23:00:00"
+        },
+        {
+            "start": "05:30:00",
+            "end": "07:00:00"
+        }
+    ]
+}

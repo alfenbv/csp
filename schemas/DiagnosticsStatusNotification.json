@@ -1,0 +1,22 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "DiagnosticsStatusNotificationRequest",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "Uploaded",
+                "UploadFailed"
+            ]
+        },
+        "requestId": {
+            "type": "string",
+            "maxLength": 25
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "status"
+    ]
+}

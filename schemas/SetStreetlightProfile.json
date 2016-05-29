@@ -1,0 +1,110 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "SetStreetlightProfileRequest",
+    "type": "object",
+    "properties": {
+        "contactorId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+        },
+        "clearSchedule": {
+            "type": "boolean"
+        },
+
+        "streetlightProfiles": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "profileId": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "stackLevel": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "recurrencyKind": {
+                        "type": "string",
+                        "enum": [
+                            "None",
+                            "Daily",
+                            "Weekly"
+                        ]
+                    },
+                    "validFrom": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "validTo": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "daySchedule":  {
+                        "type": "array",
+                        "items":  {
+                            "type": "object",
+                            "properties" : {
+                                "start": {
+                                    "type": "object",
+                                    "properties": {
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": ["Absolute", "Sunset", "Sunrise"]
+                                        },
+                                        "offset": {
+                                            "type": "integer",
+                                            "minimum": -86400,
+                                            "maximum": 86400
+                                        },
+                                        "time": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [ "kind"],
+                                    "additionalProperties": false
+                                },
+                                "end": {
+                                    "type": "object",
+                                    "properties": {
+                                        "kind": {
+                                            "type": "string",
+                                            "enum": ["Absolute", "Sunset", "Sunrise"]
+                                        },
+                                        "offset": {
+                                            "type": "integer",
+                                            "minimum": -86400,
+                                            "maximum": 86400
+                                        },
+                                        "time": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [ "kind"],
+                                    "additionalProperties": false
+                                }
+                             },
+                            "required": [ "start", "end" ],
+                            "additionalProperties": false
+                        },
+                        "minItems": 1,
+                        "maxItems": 4
+                    }
+                },
+                "required": [
+                    "profileId",
+                    "stackLevel",
+                    "recurrencyKind",
+                    "daySchedule"
+                ]
+            },
+            "minItems": 1
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "contactorId",
+        "streetlightProfiles"
+    ]
+}

@@ -1,0 +1,45 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "GetEffectiveStreetlightDayScheduleResponse",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "enum": [
+                "Accepted",
+                "Rejected",
+                "NotSupported"
+            ]
+        },
+        "contactorId": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+        },
+        "daySchedule": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "start": {
+                        "type": "string"
+                    },
+                    "end": {
+                        "type": "string"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "start",
+                    "end"
+                    ]
+            }
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "status",
+        "contactorId",
+        "daySchedule"
+    ]
+}

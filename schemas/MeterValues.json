@@ -1,0 +1,155 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "MeterValuesRequest",
+    "type": "object",
+    "properties": {
+        "meterValue": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "timestamp": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "sampledValue": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "value": {
+                                    "type": "string"
+                                },
+                                "context": {
+                                    "type": "string",
+                                    "enum": [
+                                        "Interruption.Begin",
+                                        "Interruption.End",
+                                        "Sample.Clock",
+                                        "Sample.Periodic",
+                                        "Trigger",
+                                        "Other"
+                                    ]
+                                },
+                                "format": {
+                                    "type": "string",
+                                    "enum": [
+                                        "Raw",
+                                        "SignedData"
+                                    ]
+                                },
+                                "measurand": {
+                                    "type": "string",
+                                    "enum": [
+                                        "AmbientTemperature",
+                                        "OilTemperature",
+                                        "Voltage.L1N",
+                                        "Voltage.L2N",
+                                        "Voltage.L3N",
+                                        "Current.L1",
+                                        "Current.L2",
+                                        "Current.L3",
+                                        "Current.N",
+                                        "Current.Sum",
+                                        "PowerFactor.L1",
+                                        "PowerFactor.L2",
+                                        "PowerFactor.L3",
+                                        "PowerFactor.Sum",
+                                        "ActivePower.L1",
+                                        "ActivePower.L2",
+                                        "ActivePower.L3",
+                                        "ActivePower.Sum",
+                                        "ApparentPower.L1",
+                                        "ApparentPower.L2",
+                                        "ApparentPower.L3",
+                                        "ApparentPower.Sum",
+                                        "ReactivePower.L1",
+                                        "ReactivePower.L2",
+                                        "ReactivePower.L3",
+                                        "ReactivePower.Sum",
+                                        "RealEnergyConsumed.L1",
+                                        "RealEnergyConsumed.L2",
+                                        "RealEnergyConsumed.L3",
+                                        "RealEnergyConsumed.Sum",
+                                        "RealEnergyDelivered.L1",
+                                        "RealEnergyDelivered.L2",
+                                        "RealEnergyDelivered.L3",
+                                        "RealEnergyDelivered.Sum",
+                                        "ApparentEnergy.L1",
+                                        "ApparentEnergy.L2",
+                                        "ApparentEnergy.L3",
+                                        "ApparentEnergy.Sum",
+                                        "ReactiveEnergy.L1",
+                                        "ReactiveEnergy.L2",
+                                        "ReactiveEnergy.L3",
+                                        "ReactiveEnergy.Sum",
+                                        "THDv.L1N",
+                                        "THDv.L2N",
+                                        "THDv.L3N",
+                                        "THDc.L1",
+                                        "THDc.L2",
+                                        "THDc.L3",
+                                        "Frequency",
+                                        "Energy.Active.Import.Register",
+                                        "Power.Active.Import",
+                                        "ReactiveEnergyInductive.L1",
+                                        "ReactiveEnergyInductive.L2",
+                                        "ReactiveEnergyInductive.L3",
+                                        "ReactiveEnergyInductive.Sum",
+                                        "ReactiveEnergyCapacitive.L1",
+                                        "ReactiveEnergyCapacitive.L2",
+                                        "ReactiveEnergyCapacitive.L3",
+                                        "ReactiveEnergyCapacitive.Sum"
+                                    ]
+                                },
+                                "location": {
+                                    "type": "string",
+                                    "enum": [
+                                        "In",
+                                        "Out",
+                                        "Body",
+                                        "P1Meter"
+                                    ]
+                                },
+                                "unit": {
+                                    "type": "string",
+                                    "enum": [
+                                        "Wh",
+                                        "kWh",
+                                        "varh",
+                                        "kvarh",
+                                        "W",
+                                        "kW",
+                                        "VA",
+                                        "VAh",
+                                        "kVA",
+                                        "var",
+                                        "kvar",
+                                        "A",
+                                        "V",
+                                        "K",
+                                        "Hz",
+                                        "C",
+                                        "%"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "value",
+                                "measurand"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "timestamp",
+                    "sampledValue"
+                ]       
+            }
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "meterValue"
+    ]
+}
